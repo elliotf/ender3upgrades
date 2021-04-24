@@ -91,8 +91,10 @@ module crush_ring_hole_profile(diam,crush_ring_height=0.2,count=6) {
     for(r=[0:count-1]) {
       rotate([0,0,r*deg]) {
         translate([0,outer_diam/2,0]) {
-          rotate([0,0,90]) {
-            accurate_circle(crush_ring_height*2,6);
+          scale([3,1,1]) {
+            rotate([0,0,90]) {
+              accurate_circle(crush_ring_height*2,6);
+            }
           }
         }
       }
@@ -101,10 +103,12 @@ module crush_ring_hole_profile(diam,crush_ring_height=0.2,count=6) {
 }
 
 module bmg_mount() {
-  zip_tie_mount_height = 15;
+  zip_tie_mount_width = 10;
   zip_tie_mount_inner = 10;
-  zip_tie_mount_pos_x = carriage_width/2+1+zip_tie_mount_height/2;
-  zip_tie_mount_length = wheel_frame_depth+2;
+  zip_tie_mount_pos_x = overall_width/2+zip_tie_mount_width/2+1;
+  //zip_tie_bottom_pos_z=spacer+space_below_motor-zip_tie_mount_width/2;
+  zip_tie_bottom_pos_z = 0;
+  zip_tie_mount_length = 35;
 
   module position_motor() {
     translate([motor_pos_x,motor_pos_y,motor_pos_z]) {
@@ -152,8 +156,18 @@ module bmg_mount() {
         translate([0,spacer+space_below_motor/2,0]) {
           rounded_square(overall_width,space_below_motor,space_below_motor);
         }
-        translate([zip_tie_mount_pos_x,spacer+space_below_motor-zip_tie_mount_height/2]) {
-          // accurate_circle(zip_tie_mount_height,resolution);
+        translate([zip_tie_mount_pos_x,zip_tie_bottom_pos_z]) {
+          accurate_circle(zip_tie_mount_width,resolution);
+        }
+      }
+
+      translate([zip_tie_mount_pos_x,zip_tie_bottom_pos_z-zip_tie_mount_width/2+zip_tie_mount_length/2,0]) {
+        rounded_square(zip_tie_mount_width,zip_tie_mount_length,zip_tie_mount_width);
+      }
+
+      translate([zip_tie_mount_pos_x-zip_tie_mount_width/2,space_below_motor+spacer,0]) {
+        rotate([0,0,90]) {
+          // # round_corner_filler_profile(4,resolution);
         }
       }
 
@@ -183,14 +197,18 @@ module bmg_mount() {
       // make room for BMG lever
       hull() {
         rounded_diam = 4;
-        translate([overall_width/2-space_below_motor/2-0.4,spacer+space_below_motor+rounded_diam/2]) {
+        translate([zip_tie_mount_pos_x-zip_tie_mount_width/2-rounded_diam/2,spacer+space_below_motor+rounded_diam/2]) {
           accurate_circle(rounded_diam,resolution);
+
+          translate([0,20,0]) {
+            square([rounded_diam,20],center=true);
+          }
         }
         translate([bmg_pos_x+rounded_diam/2,motor_pos_z+nema17_hole_spacing/2+3/2,0]) {
           accurate_circle(rounded_diam,resolution);
         }
-        large_rounded_diam = 29;
-        translate([bmg_pos_x+large_rounded_diam/2+7,spacer+space_below_motor+large_rounded_diam/2+4,0]) {
+        large_rounded_diam = 20;
+        translate([bmg_pos_x+large_rounded_diam/2+8,spacer+space_below_motor+large_rounded_diam/2+7,0]) {
           accurate_circle(large_rounded_diam,resolution*2);
         }
       }
@@ -245,22 +263,19 @@ module bmg_mount() {
       }
     }
 
-    /*
-    translate([zip_tie_mount_pos_x,carriage_material_thickness,spacer+space_below_motor-zip_tie_mount_height/2]) {
+    zip_tie_mount_above_carriage = zip_tie_mount_length-abs(zip_tie_bottom_pos_z)-zip_tie_mount_width/2;
+    zip_tie_mount_top = zip_tie_bottom_pos_z-zip_tie_mount_width/2+zip_tie_mount_length;
+    zip_tie_anchor_length = zip_tie_mount_top-(motor_pos_z-nema17_hole_spacing/2)+2;
+    translate([zip_tie_mount_pos_x,0,zip_tie_mount_top-zip_tie_anchor_length/2]) {
       rotate([90,0,0]) {
-        hole(zip_tie_mount_height,zip_tie_mount_length,resolution);
+        rounded_cube(zip_tie_mount_width,zip_tie_anchor_length,6,zip_tie_mount_width);
+      }
+    }
+    /*
+    translate([zip_tie_mount_pos_x,0,zip_tie_mount_above_carriage/2]) {
+      rotate([90,0,0]) {
+        rounded_cube(zip_tie_mount_width,zip_tie_mount_above_carriage,10,zip_tie_mount_width);
 
-        lip_diam = 2.5;
-        translate([0,0,zip_tie_mount_length/2-lip_diam/2]) {
-          // hole(zip_tie_mount_height+1,2,resolution);
-          rotate_extrude(convexity=3,$fn=resolution) {
-            translate([zip_tie_mount_height/2-lip_diam/4,0,0]) {
-              rotate([0,0,90]) {
-                accurate_circle(lip_diam,6);
-              }
-            }
-          }
-        }
       }
     }
     */
@@ -285,9 +300,18 @@ module bmg_mount() {
       }
 
       for(z=[top,bottom]) {
-        cavity_length = 35;
+        cavity_length = 32;
         translate([0,0,mount_thickness/2+z*(mount_thickness/2+cavity_length/2)]) {
           motor_cavity(cavity_length);
+
+          translate([nema17_hole_spacing/2,-nema17_hole_spacing/2,z*cavity_length/2]) {
+            hole(7,cavity_length,resolution);
+            rotate([0,0,90]) {
+              translate([0,20,0]) {
+                cube([7,40,cavity_length],center=true);
+              }
+            }
+          }
         }
       }
     }
@@ -305,22 +329,38 @@ module bmg_mount() {
       }
     }
 
-    /*
-    translate([zip_tie_mount_pos_x,carriage_material_thickness,spacer+space_below_motor-zip_tie_mount_height/2]) {
-      rotate([90,0,0]) {
-        inner_diam = zip_tie_mount_height-extrude_width*8;
-        hole(inner_diam,wheel_frame_depth*4,resolution);
-
-        rotate([0,0,35]) {
-          translate([inner_diam/2,0,0]) {
-            cube([inner_diam,inner_diam,wheel_frame_depth*4],center=true);
-
-            cube([inner_diam*0.8,inner_diam*2,wheel_frame_depth*4],center=true);
+    // zip tie whatnots
+    translate([zip_tie_mount_pos_x,-3,motor_pos_z-nema17_hole_spacing/2]) {
+      angle = -10;
+      rotate([angle,0,0]) {
+        translate([0,-2,zip_tie_mount_length/2]) {
+          translate([0,0,-6]) {
+            rotate([-angle,0,0]) {
+              for(z=[top,bottom]) {
+                translate([0,0,z*4]) {
+                  //% debug_axes();
+                  inner_diam = zip_tie_mount_width+2;
+                  outer_diam = inner_diam+4;
+                  zip_tie_width = 3;
+                  difference() {
+                    hole(outer_diam,zip_tie_width,resolution);
+                    hole(inner_diam,zip_tie_width+1,resolution);
+                  }
+                }
+              }
+            }
+          }
+          resize([zip_tie_mount_width-extrude_width*4,7,zip_tie_mount_length]) {
+            hole(7,1,resolution);
+          }
+          rotate([-angle,0,0]) {
+            translate([0,-10,0]) {
+              cube([zip_tie_mount_width+1,20,zip_tie_mount_length+1],center=true);
+            }
           }
         }
       }
     }
-    */
   }
 
   difference() {
