@@ -36,11 +36,12 @@ extrusion_end_pos_y = -40/2+5;
 extrusion_top_pos_z = -main_height/2+18;
 
 x_cable_hole_diam = 17.5;
+x_cable_hole_outer_diam = x_cable_hole_diam + brace_thickness*2;
 
 lid_ledge_depth = 3.5;
 lid_ledge_from_top = brace_thickness * 2;
 
-lid_thickness = extrude_width*2;
+lid_thickness = lid_ledge_from_top;
 lid_length = main_height - base_thickness;
 lid_width = main_width - brace_thickness*2 - 1;
 
@@ -53,8 +54,16 @@ vent_hole_length = (main_width-vent_hole_from_edge*2-(vent_hole_wall_thickness*(
 vent_hole_spacing_x = vent_hole_width + 2.8;
 vent_hole_spacing_y = vent_hole_length + 2.8;
 
-lid_tab_count = 3;
+lid_tab_count = 2;
 lid_tab_width = 10;
+lid_tab_thickness = lid_thickness*0.6;
+lid_tab_edge_thickness = 0.28;
+lid_tab_depth = base_thickness-0.6;
+lid_tab_from_center = lid_width*0.28;
+lid_tab_hole_length = lid_tab_width+0.4;
+lid_tab_hole_width = lid_tab_thickness+0.4;
+lid_screw_body_diam = m3_threaded_insert_diam+wall_thickness*4;
+lid_screw_from_end = lid_screw_body_diam/2;
 
 module position_ender3_holes() {
   pcb_hole_positions(BTT_SKR_MINI_E3_V2_0) {
@@ -97,7 +106,8 @@ module electronics_mount() {
   }
 
   module position_rpi() {
-    translate([-bevel_height,-12,main_height/2-base_thickness-1]) {
+    translate([-brace_thickness/2-bevel_height,-12,main_height/2-base_thickness-1]) {
+      // vertical orientation
       translate([0,pcb_length(RPI3)/2+pcb_width(RPI3)/2-61.5-3.5,pcb_length(RPI3)/2-(61.5+3.5)]) {
         rotate([0,-90,0]) {
           rotate([0,0,0]) {
@@ -105,6 +115,7 @@ module electronics_mount() {
           }
         }
       }
+      // horizontal orientation
       translate([0,0,-pcb_width(RPI3)/2]) {
         rotate([0,-90,0]) {
           rotate([0,0,-90]) {
@@ -142,6 +153,10 @@ module electronics_mount() {
         square([x_cable_hole_diam/2,x_cable_hole_diam/2],center=true);
       }
 
+      translate([brace_thickness/2,-main_width/2+brace_thickness,0]) {
+        # round_corner_filler_profile(brace_thickness*3);
+      }
+
       for(y=[front,rear]) {
         mirror([0,y-1,0]) {
           translate([-brace_thickness/2+overall_depth/2,main_width/2-brace_thickness/2,0]) {
@@ -151,29 +166,19 @@ module electronics_mount() {
               rounded_square(brace_thickness,lid_ledge_depth+brace_thickness,brace_thickness);
             }
           }
-
-          translate([brace_thickness/2,main_width/2-brace_thickness,0]) {
-            rotate([0,0,-90]) {
-              round_corner_filler_profile(brace_thickness);
-            }
-          }
         }
       }
     }
 
     module holes() {
       translate([-brace_thickness/2,-main_width/2,0]) {
-        round_corner_filler_profile(brace_thickness*3);
+        round_corner_filler_profile(brace_thickness*5);
       }
-      /*
-      for(y=[front,rear]) {
-        mirror([0,y-1,0]) {
-          translate([-brace_thickness/2,-main_width/2,0]) {
-            # round_corner_filler_profile(brace_thickness*3);
-          }
+      translate([-brace_thickness/2,main_width/2]) {
+        rotate([0,0,-90]) {
+          round_corner_filler_profile(x_cable_hole_outer_diam);
         }
       }
-      */
 
       translate([brace_thickness/2+x_cable_hole_diam/2,rear*(main_width/2-brace_thickness-x_cable_hole_diam/2)]) {
         accurate_circle(x_cable_hole_diam,resolution);
@@ -186,20 +191,37 @@ module electronics_mount() {
     }
   }
 
+  module position_lid_tabs() {
+    for(y=[front,rear]) {
+      translate([-brace_thickness/2+overall_depth,y*lid_tab_from_center,main_height/2-base_thickness]) {
+        translate([-lid_thickness+lid_tab_thickness/2,0,0]) {
+          children();
+        }
+      }
+    }
+  }
+
   module body() {
     linear_extrude(height=main_height,center=true,convexity=3) {
       profile();
     }
     translate([0,0,main_height/2-base_thickness/2]) {
       hull() {
-        outer_diam = brace_thickness*3;
-        translate([-brace_thickness/2+outer_diam/2,0,0]) {
-          rounded_cube(outer_diam,main_width,base_thickness,outer_diam);
+        outer_diam = brace_thickness*5;
+        translate([-brace_thickness/2+outer_diam/2,-main_width/2+outer_diam/2,0]) {
+          hole(outer_diam,base_thickness,resolution);
+        }
+        translate([-brace_thickness/2+x_cable_hole_outer_diam/2,main_width/2-x_cable_hole_outer_diam/2,0]) {
+          hole(x_cable_hole_outer_diam,base_thickness,resolution);
         }
         translate([overall_depth-brace_thickness,0,0]) {
           rounded_cube(brace_thickness,main_width,base_thickness,brace_thickness);
         }
       }
+    }
+
+    position_lid_tabs() {
+      // rounded_cube(lid_tab_hole_width+wall_thickness*4,lid_tab_hole_length+wall_thickness*4,base_thickness,brace_thickness,resolution);
     }
 
     // extra girth for side of extrusion mount
@@ -302,11 +324,24 @@ module electronics_mount() {
           cube([brace_thickness,main_width,lid_ledge_depth],center=true);
         }
       }
+
+      translate([0,0,0]) {
+        % debug_axes();
+        hull() {
+          cube([brace_thickness,lid_screw_body_diam*2,lid_ledge_depth-0.24*2],center=true);
+          screw_body_depth = brace_thickness*4;
+          translate([brace_thickness/2-screw_body_depth/2,0,-lid_ledge_depth/2-lid_screw_from_end]) {
+            rotate([0,90,0]) {
+              hole(lid_screw_body_diam,screw_body_depth,resolution);
+            }
+          }
+        }
+      }
     }
     intersection() {
       // ensure bevels don't poke out
-      translate([overall_depth/2,0,0]) {
-        cube([overall_depth,main_width-x_cable_hole_diam,main_height],center=true);
+      translate([overall_depth/2,0,-main_height/2-base_thickness/2]) {
+        cube([overall_depth,main_width-x_cable_hole_diam,main_height*2],center=true);
       }
       union() {
         bridge_spacing = 20;
@@ -327,7 +362,6 @@ module electronics_mount() {
   }
 
   module holes() {
-
     module vent_hole_line() {
       for(y=[0:num_vent_holes_y-1]) {
         translate([0,y*vent_hole_spacing_y,0]) {
@@ -353,6 +387,21 @@ module electronics_mount() {
           }
         }
       }
+    }
+
+    position_lid_tabs() {
+      hull() {
+        translate([-0.1-lid_tab_hole_width/2,0,0]) {
+          translate([lid_tab_hole_width/2,0,0]) {
+            rounded_cube(lid_tab_hole_width,lid_tab_hole_length,0.1,brace_thickness,resolution);
+          }
+          edge_hole_width = lid_tab_edge_thickness+0.5;
+          translate([edge_hole_width/2,0,0]) {
+            rounded_cube(edge_hole_width,lid_tab_hole_length,2*(lid_tab_depth+0.2),edge_hole_width,resolution);
+          }
+        }
+      }
+      // rounded_cube(lid_tab_hole_width,lid_tab_hole_length,base_thickness*4,brace_thickness,resolution);
     }
 
     // X axis cabling
@@ -417,9 +466,17 @@ module electronics_mount() {
       }
     }
 
+    // lid screw
+    translate([0,0,-main_height/2-lid_screw_from_end]) {
+      rotate([0,90,0]) {
+        hole(m3_threaded_insert_diam,overall_depth*2+1,resolution);
+      }
+    }
+
     position_rpi() {
       pcb_hole_positions(RPI3) {
-        hole(m3_thread_into_plastic_hole_diam,2*(bevel_height),8);
+        //hole(m3_thread_into_plastic_hole_diam,2*(bevel_height),8);
+        hole(2.1,2*(bevel_height),8);
       }
     }
 
@@ -468,12 +525,6 @@ module electronics_mount() {
         //% debug_axes();
       }
     }
-
-    translate([-brace_thickness/2,main_width/2,0]) {
-      rotate([0,0,-90]) {
-        round_corner_filler(x_cable_hole_diam+brace_thickness*2,main_height+2);
-      }
-    }
   }
 
   position_ender3_board() {
@@ -489,71 +540,51 @@ module electronics_mount() {
 module electronics_lid() {
   ridge_height = lid_ledge_from_top-lid_thickness/2;
 
-  module retainer_clip() {
-    clip_thickness = vent_hole_width-0.5;
-    clip_length = base_thickness+lid_thickness;
-    clip_width = vent_hole_length-vent_hole_width;
-
-    % debug_axes();
-
-    // vent hole retainer clips
+  module profile() {
+    screw_hole_diam = 3.6;
+    screw_body_diam = screw_hole_diam+wall_thickness*4;
     module body() {
-      translate([-clip_thickness/2,0,0]) {
-        rounded_cube(clip_thickness,clip_length,clip_width,clip_thickness);
-        translate([clip_thickness/4,clip_length/4,0]) {
-          cube([clip_thickness/2,clip_length/2,clip_width],center=true);
+      rounded_square(lid_length,lid_width,lid_thickness);
+
+      translate([lid_length/2,0,0]) {
+        hull() {
+          translate([-1/2,0,0]) {
+            square([1,screw_body_diam*2],center=true);
+          }
+          translate([lid_screw_from_end,0,0]) {
+            accurate_circle(screw_body_diam,resolution);
+          }
         }
       }
     }
 
     module holes() {
-      translate([0,0,-clip_width/2]) {
-        for(r=[0,-90]) {
-          rotate([0,0,r]) {
-            rotate([-45,0,0]) {
-              translate([0,0,-10]) {
-                cube([20,20,20],center=true);
-              }
-            }
-          }
-        }
+      translate([lid_length/2+lid_screw_from_end,0,0]) {
+        accurate_circle(screw_hole_diam,resolution);
       }
     }
+
     difference() {
       body();
       holes();
     }
   }
 
-  module profile() {
-    rounded_square(lid_thickness,lid_length,lid_thickness);
-
-    num_ridges = 4;
-    ridge_spacing = (lid_length-lid_thickness)/(num_ridges-1);
-    for(y=[0:num_ridges-1]) {
-      translate([-lid_thickness/2+ridge_height/2,lid_thickness/2-lid_length/2+y*ridge_spacing,0]) {
-        rounded_square(ridge_height,lid_thickness,lid_thickness);
-      }
-    }
-
-  }
-
   module body() {
-    for(z=[left,right]) {
-      mirror([0,0,z-1]) {
-        translate([0,0,-lid_width/2]) {
-          gusset(ridge_height, lid_ledge_from_top*1.5, lid_length, lid_thickness);
-        }
-      }
-    }
-    linear_extrude(height=lid_width,center=true,convexity=3) {
+    linear_extrude(height=lid_thickness,center=true,convexity=3) {
       profile();
     }
 
-    for(z=[top,bottom]) {
-      translate([0,-lid_length/2,z*(main_width/2-vent_hole_from_edge-vent_hole_length/2)]) {
-        retainer_clip();
-        //% debug_axes();
+    for(y=[front,rear]) {
+      translate([-lid_length/2,y*lid_tab_from_center,-lid_thickness/2]) {
+        hull() {
+          translate([0,0,lid_tab_edge_thickness/2]) {
+            rounded_cube(lid_tab_depth*2,lid_tab_width,lid_tab_edge_thickness,vent_hole_width);
+          }
+          translate([vent_hole_width/2,0,lid_tab_thickness/2]) {
+            # rounded_cube(vent_hole_width,lid_tab_width,lid_tab_thickness,vent_hole_width);
+          }
+        }
       }
     }
   }
@@ -569,14 +600,13 @@ module electronics_lid() {
 }
 
 module assembly() {
-  translate([overall_depth-lid_ledge_from_top-lid_thickness/2+0.2,0,-main_height/2+lid_length/2-0.2]) {
-    rotate([-90,0,0]) {
+  translate([-brace_thickness/2+overall_depth-lid_thickness/2+0.1,0,-main_height/2+lid_length/2-0.2]) {
+    rotate([0,90,0]) {
       electronics_lid();
     }
   }
 
-  % color("#777",0.3) electronics_mount();
-  //electronics_mount();
+  electronics_mount();
 }
 
 assembly();
