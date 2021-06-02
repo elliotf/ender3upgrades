@@ -74,8 +74,6 @@ motor_pos_x = bmg_pos_x-mount_thickness;
 motor_pos_y = bmg_pos_y;
 motor_pos_z = bmg_pos_z;
 
-motor_plate_thickness = 3;
-
 carriage_spacer_hole_diam = carriage_spacer_diam;
 wheel_frame_rounded_diam = carriage_spacer_hole_diam+crush_ring_height*2+wall_thickness*2*2;
 wheel_frame_depth = 7.5;
@@ -105,10 +103,10 @@ module crush_ring_hole_profile(diam,crush_ring_height=0.2,count=6) {
 module bmg_mount() {
   zip_tie_mount_width = 10;
   zip_tie_mount_inner = 10;
-  zip_tie_mount_pos_x = overall_width/2+zip_tie_mount_width/2+1;
+  zip_tie_mount_pos_x = overall_width/2+zip_tie_mount_width/2+2;
   //zip_tie_bottom_pos_z=spacer+space_below_motor-zip_tie_mount_width/2;
   zip_tie_bottom_pos_z = 0;
-  zip_tie_mount_length = 35;
+  zip_tie_mount_length = 40;
 
   module position_motor() {
     translate([motor_pos_x,motor_pos_y,motor_pos_z]) {
@@ -266,9 +264,9 @@ module bmg_mount() {
     zip_tie_mount_above_carriage = zip_tie_mount_length-abs(zip_tie_bottom_pos_z)-zip_tie_mount_width/2;
     zip_tie_mount_top = zip_tie_bottom_pos_z-zip_tie_mount_width/2+zip_tie_mount_length;
     zip_tie_anchor_length = zip_tie_mount_top-(motor_pos_z-nema17_hole_spacing/2)+2;
-    translate([zip_tie_mount_pos_x,0,zip_tie_mount_top-zip_tie_anchor_length/2]) {
+    translate([zip_tie_mount_pos_x,-10,zip_tie_mount_top-zip_tie_anchor_length/2]) {
       rotate([90,0,0]) {
-        rounded_cube(zip_tie_mount_width,zip_tie_anchor_length,6,zip_tie_mount_width);
+        rounded_cube(zip_tie_mount_width,zip_tie_anchor_length,26,zip_tie_mount_width);
       }
     }
     /*
@@ -300,7 +298,7 @@ module bmg_mount() {
       }
 
       for(z=[top,bottom]) {
-        cavity_length = 32;
+        cavity_length = 33;
         translate([0,0,mount_thickness/2+z*(mount_thickness/2+cavity_length/2)]) {
           motor_cavity(cavity_length);
 
@@ -331,8 +329,11 @@ module bmg_mount() {
 
     // zip tie whatnots
     translate([zip_tie_mount_pos_x,-3,motor_pos_z-nema17_hole_spacing/2]) {
-      angle = -10;
+      angle = 10;
       rotate([angle,0,0]) {
+        translate([0,-12,zip_tie_mount_length/2]) {
+          cube([zip_tie_mount_width+1,20,zip_tie_mount_length+1],center=true);
+        }
         translate([0,-2,zip_tie_mount_length/2]) {
           translate([0,0,-6]) {
             rotate([-angle,0,0]) {
@@ -355,7 +356,7 @@ module bmg_mount() {
           }
           rotate([-angle,0,0]) {
             translate([0,-10,0]) {
-              cube([zip_tie_mount_width+1,20,zip_tie_mount_length+1],center=true);
+              // # cube([zip_tie_mount_width+1,20,zip_tie_mount_length+1],center=true);
             }
           }
         }
