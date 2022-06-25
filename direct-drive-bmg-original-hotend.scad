@@ -2,7 +2,7 @@ include <../plotter/lib/util.scad>;
 include <../plotter/lib/vitamins.scad>;
 
 nema17_side = 42;
-extrude_width = 0.4;
+extrude_width = 0.5;
 extrude_height = 0.2;
 spacer = 0.2;
 
