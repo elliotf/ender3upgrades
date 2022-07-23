@@ -1,5 +1,7 @@
 include <lumpyscad/lib.scad>;
 
+tolerance = 0.2;
+
 y_rail_side_rail_dist_x = 135;
 y_rail_side_rail_dist_z = 33;
 y_rail_length = 330;
@@ -14,12 +16,18 @@ x_rail_pos_z = 200;
 
 vertical_side_rail_length = 400;
 
-psu_length = 215;
-psu_width = 115;
-psu_height = 30;
+psu_length = 215+tolerance*2;
+psu_width = 115+tolerance*2;
+psu_height = 30+tolerance*2;
 
 psu_terminal_area_depth = 15;
 psu_metal_thickness = 2;
+
+module position_x_axis() {
+  translate([0,front*20/2,x_rail_pos_z]) {
+    children();
+  }
+}
 
 // meanwell LRS-350-24
 module psu() {
@@ -99,8 +107,8 @@ module fake_ender3_frame(frame_color="#555", opacity=1) {
       }
     }
 
-    // x rail
-    translate([0,front*20/2,x_rail_pos_z]) {
+    position_x_axis() {
+      // x rail
       rotate([0,90,0]) {
         color(frame_color, opacity) extrusion_2020(y_rail_length);
       }
@@ -114,7 +122,7 @@ module fake_ender3_frame(frame_color="#555", opacity=1) {
         }
       }
       translate([0,20,40/2+y_rail_side_rail_dist_z]) {
-        cube([20,40,40],center=true);
+        cube([20,50,40],center=true);
       }
       translate([-side_connector_length/2+58,10,0]) {
         hole(3,40,resolution);

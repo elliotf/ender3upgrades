@@ -89,7 +89,7 @@ module crush_ring_hole_profile(diam,crush_ring_height=0.2,count=6) {
     for(r=[0:count-1]) {
       rotate([0,0,r*deg]) {
         translate([0,outer_diam/2,0]) {
-          scale([3,1,1]) {
+          scale([5,1,1]) {
             rotate([0,0,90]) {
               accurate_circle(crush_ring_height*2,6);
             }
@@ -453,6 +453,13 @@ module x_carriage() {
 
 bmg_mount();
 % x_carriage();
+
+module direct_drive_assembly() {
+  translate([0,front*(20-4),-carriage_wheel_pos_z+20]) {
+    bmg_mount();
+    % x_carriage();
+  }
+}
 
 /*
 % debug_axes(0.005);

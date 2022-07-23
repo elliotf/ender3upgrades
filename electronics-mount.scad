@@ -1,6 +1,5 @@
 include <NopSCADlib/lib.scad>;
-include <../plotter/lib/vitamins.scad>;
-include <../plotter/lib/util.scad>;
+include <lumpyscad/lib.scad>;
 
 extrude_width = 0.4;
 extrude_height = 0.24;
@@ -11,8 +10,11 @@ brace_thickness = extrude_width*4;
 base_thickness = 3;
 gusset_plate_thickness = 2;
 
-ender3_board_max_x = pcb_length(BTT_SKR_MINI_E3_V2_0);
-ender3_board_max_y = pcb_width(BTT_SKR_MINI_E3_V2_0);
+//board_type = BTT_SKR_V1_4_TURBO;
+board_type = BTT_SKR_MINI_E3_V2_0;
+
+ender3_board_max_x = pcb_length(board_type);
+ender3_board_max_y = pcb_width(board_type);
 
 // BTT_SKR_MINI_E3_V2_0
 
@@ -32,6 +34,7 @@ room_below_ender3_board = 27;
 main_height = pcb_length(BTT_SKR_MINI_E3_V2_0) + room_below_ender3_board + room_above_ender3_board;
 main_width = ender3_board_max_y + room_for_screw_terminal_cables + brace_thickness + bevel_height;
 
+extrusion_offset_x = 0;
 extrusion_end_pos_y = -40/2+5;
 extrusion_top_pos_z = -main_height/2+18;
 
@@ -66,7 +69,7 @@ lid_screw_body_diam = m3_threaded_insert_diam+wall_thickness*4;
 lid_screw_from_end = lid_screw_body_diam/2;
 
 module position_ender3_holes() {
-  pcb_hole_positions(BTT_SKR_MINI_E3_V2_0) {
+  pcb_hole_positions(board_type) {
     children();
   }
 }
@@ -92,20 +95,13 @@ translate([0,-50,0]) {
   // gusset(40,40,brace_thickness, brace_thickness);
 }
 
-module electronics_mount() {
+module vertical_skr_e3_mini_electronics_mount() {
   echo("electronics mount height: ", main_height);
   echo("electronics mount width: ", main_width);
   echo("electronics mount depth: ", overall_depth);
 
-  translate([-brace_thickness/2-20/2,extrusion_end_pos_y+100/2,extrusion_top_pos_z-40/2]) {
-    rotate([90,0,0]) {
-      rotate([0,0,90]) {
-        % color("lightgrey") extrusion_2040(100);
-      }
-    }
-  }
-
   module position_rpi() {
+    /*
     translate([-brace_thickness/2-bevel_height,-12,main_height/2-base_thickness-1]) {
       // vertical orientation
       translate([0,pcb_length(RPI3)/2+pcb_width(RPI3)/2-61.5-3.5,pcb_length(RPI3)/2-(61.5+3.5)]) {
@@ -124,6 +120,7 @@ module electronics_mount() {
         }
       }
     }
+    */
   }
 
   position_rpi() {
@@ -220,9 +217,6 @@ module electronics_mount() {
       }
     }
 
-    position_lid_tabs() {
-      // rounded_cube(lid_tab_hole_width+wall_thickness*4,lid_tab_hole_length+wall_thickness*4,base_thickness,brace_thickness,resolution);
-    }
 
     // extra girth for side of extrusion mount
     translate([brace_thickness/2,0,extrusion_top_pos_z-20/2]) {
@@ -519,16 +513,11 @@ module electronics_mount() {
           }
         }
       }
-
-      // bed wiring hole
-      translate([0,0,0]) {
-        //% debug_axes();
-      }
     }
   }
 
   position_ender3_board() {
-    % pcb(BTT_SKR_MINI_E3_V2_0);
+    % pcb(board_type);
   }
 
   difference() {
@@ -576,13 +565,15 @@ module electronics_lid() {
     }
 
     for(y=[front,rear]) {
-      translate([-lid_length/2,y*lid_tab_from_center,-lid_thickness/2]) {
-        hull() {
-          translate([0,0,lid_tab_edge_thickness/2]) {
-            rounded_cube(lid_tab_depth*2,lid_tab_width,lid_tab_edge_thickness,vent_hole_width);
-          }
-          translate([vent_hole_width/2,0,lid_tab_thickness/2]) {
-            # rounded_cube(vent_hole_width,lid_tab_width,lid_tab_thickness,vent_hole_width);
+      translate([-lid_length/2,0,-lid_thickness/2]) {
+        position_lid_tabs_y() {
+          hull() {
+            translate([0,0,lid_tab_edge_thickness/2]) {
+              rounded_cube(lid_tab_depth*2,lid_tab_width,lid_tab_edge_thickness,vent_hole_width);
+            }
+            translate([vent_hole_width/2,0,lid_tab_thickness/2]) {
+              # rounded_cube(vent_hole_width,lid_tab_width,lid_tab_thickness,vent_hole_width);
+            }
           }
         }
       }
@@ -599,14 +590,26 @@ module electronics_lid() {
   }
 }
 
-module assembly() {
+module vertical_skr_e3_mini_electronics_mount_assembly() {
   translate([-brace_thickness/2+overall_depth-lid_thickness/2+0.1,0,-main_height/2+lid_length/2-0.2]) {
     rotate([0,90,0]) {
-      electronics_lid();
+      // electronics_lid();
     }
   }
 
-  electronics_mount();
+  translate([-side_connector_length/2-40,side_rail_length_rear,40-extrusion_top_pos_z]) {
+    rotate([0,0,180]) {
+      vertical_skr_e3_mini_electronics_mount();
+    }
+  }
+
+  translate([-brace_thickness/2+extrusion_offset_x,extrusion_end_pos_y+100/2,extrusion_top_pos_z-20/2]) {
+    rotate([90,0,0]) {
+      rotate([0,0,0]) {
+        % color("lightgrey") extrusion_2040(100);
+      }
+    }
+  }
 }
 
-assembly();
+//assembly();
